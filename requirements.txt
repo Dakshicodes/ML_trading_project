@@ -1,0 +1,10 @@
+pandas
+numpy
+scikit-learn
+joblib
+requests
+pyarrow
+fastapi
+uvicorn[standard]
+websockets
+pytest

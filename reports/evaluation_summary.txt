@@ -1,0 +1,5 @@
+                    Strategy  Trades Directional Accuracy Win Rate (after fees) Gross Return Net Return (after fees) Profit Factor Max Drawdown
+          Always Up Baseline   31096                49.8%                  9.9%      +56.41%               -7406.63%          0.08     7406.14%
+        RSI 14 Rule Baseline    2176                56.1%                 18.1%      -12.03%                -534.27%          0.14      536.57%
+Logistic Regression Baseline     238                57.1%                 21.4%      -11.02%                 -68.14%          0.15       68.67%
+          AI Indicator Model     984                54.3%                  6.3%       -6.96%                -243.12%          0.03      242.78%

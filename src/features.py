@@ -34,8 +34,7 @@ FEATURE_COLUMNS: List[str] = [
     "return_12",
     "rsi_14",
     "macd",
-    "macd_signal",
-    "macd_hist",
+    "macd_signal",    "macd_hist",
     # Moving Average Spreads (percentage difference from close)
     "ema_9_diff",
     "ema_21_diff",
@@ -183,24 +182,33 @@ def create_labels(
     horizon_bars: int = config.HORIZON_BARS,
     fee_per_side: float = config.FEE_PER_SIDE,
     slippage_per_side: float = config.SLIPPAGE_PER_SIDE,
+    binary: bool = True,
 ) -> Tuple[pd.DataFrame, pd.Series]:
     """
     Generate target labels based on forward return over `horizon_bars`.
 
-    Hurdle Calculation:
-    A round-trip trade costs:
-        Total Cost = 2 * (fee_per_side + slippage_per_side)
-    For default 0.10% fee and 0.02% slippage, round-trip cost = 0.24% (0.0024).
-    We set the threshold hurdle to require exceeding round-trip cost to be classified
-    as Up (+1) or Down (-1), else Neutral (0).
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with at least 'close' column.
+    horizon_bars : int
+        Number of future bars to compute return (default: config.HORIZON_BARS).
+    fee_per_side : float
+        Taker fee per side (default: 0.10%).
+    slippage_per_side : float
+        Assumed slippage per side (default: 0.02%).
+    binary : bool
+        If True (recommended for probability calibration):
+            1: Up (forward return > 0)
+            0: Down (forward return <= 0)
+        If False:
+            1: Up (> hurdle)
+            0: Neutral (within [-hurdle, +hurdle])
+           -1: Down (< -hurdle)
 
     Returns
     -------
-    (df_with_target, target_series):
-        target values:
-             1: Up
-             0: Neutral
-            -1: Down
+    (df_with_target, target_series)
     """
     hurdle = 2.0 * (fee_per_side + slippage_per_side)
 
@@ -208,15 +216,23 @@ def create_labels(
     future_close = df["close"].shift(-horizon_bars)
     forward_return = (future_close - df["close"]) / df["close"]
 
-    # Target class assignment
-    # 1: Up (> hurdle), -1: Down (< -hurdle), 0: Neutral
-    target = pd.Series(0, index=df.index, dtype=np.int64)
-    target[forward_return > hurdle] = 1
-    target[forward_return < -hurdle] = -1
-
-    # Keep forward_return column for evaluation & PnL simulation
     df_labeled = df.copy()
     df_labeled["forward_return"] = forward_return
-    df_labeled["target"] = target
 
-    return df_labeled, target
+    # Binary directional target (1: Up, 0: Down)
+    target_binary = pd.Series(0, index=df.index, dtype=np.int64)
+    target_binary[forward_return > 0.0] = 1
+    df_labeled["target_binary"] = target_binary
+
+    # Ternary hurdle target (1: Up, 0: Neutral, -1: Down)
+    target_ternary = pd.Series(0, index=df.index, dtype=np.int64)
+    target_ternary[forward_return > hurdle] = 1
+    target_ternary[forward_return < -hurdle] = -1
+    df_labeled["target_ternary"] = target_ternary
+
+    if binary:
+        df_labeled["target"] = target_binary
+        return df_labeled, target_binary
+    else:
+        df_labeled["target"] = target_ternary
+        return df_labeled, target_ternary

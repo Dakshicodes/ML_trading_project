@@ -1,0 +1,59 @@
+{
+  "evaluated_at": "2026-10-31T19:02:51.914008+00:00",
+  "symbol": "ETHUSDT",
+  "interval": "5m",
+  "horizon_bars": 3,
+  "round_trip_cost_pct": 0.24000000000000002,
+  "test_candles": 31096,
+  "confidence_threshold": 0.6,
+  "results": {
+    "1_Always_Up_Baseline": {
+      "total_trades": 31096,
+      "long_trades": 31096,
+      "short_trades": 0,
+      "directional_accuracy": 49.79418574736301,
+      "win_rate": 9.917674298945203,
+      "gross_cumulative_return_pct": 56.410275249904785,
+      "net_cumulative_return_pct": -7406.629724750095,
+      "avg_trade_net_return_pct": -0.238185931462249,
+      "profit_factor": 0.07605237705953133,
+      "max_drawdown_pct": 7406.140433317013
+    },
+    "2_RSI_14_Rule_Baseline": {
+      "total_trades": 2176,
+      "long_trades": 1030,
+      "short_trades": 1146,
+      "directional_accuracy": 56.11213235294118,
+      "win_rate": 18.106617647058822,
+      "gross_cumulative_return_pct": -12.034291090700187,
+      "net_cumulative_return_pct": -534.2742910907002,
+      "avg_trade_net_return_pct": -0.24553046465565267,
+      "profit_factor": 0.1387441736195157,
+      "max_drawdown_pct": 536.5716317869679
+    },
+    "3_Logistic_Regression_Baseline": {
+      "total_trades": 238,
+      "long_trades": 125,
+      "short_trades": 113,
+      "directional_accuracy": 57.14285714285714,
+      "win_rate": 21.428571428571427,
+      "gross_cumulative_return_pct": -11.022341433619086,
+      "net_cumulative_return_pct": -68.1423414336191,
+      "avg_trade_net_return_pct": -0.2863123589647861,
+      "profit_factor": 0.14935754205019322,
+      "max_drawdown_pct": 68.67429143255431
+    },
+    "4_AI_Indicator_Model": {
+      "total_trades": 984,
+      "long_trades": 472,
+      "short_trades": 512,
+      "directional_accuracy": 54.268292682926834,
+      "win_rate": 6.300813008130081,
+      "gross_cumulative_return_pct": -6.963319093303842,
+      "net_cumulative_return_pct": -243.1233190933039,
+      "avg_trade_net_return_pct": -0.24707654379400804,
+      "profit_factor": 0.03129037508467947,
+      "max_drawdown_pct": 242.78111939187653
+    }
+  }
+}

@@ -102,17 +102,19 @@ def test_target_labeling_logic():
         }
     )
 
-    # Horizon = 2 bars, Hurdle = 2% (0.02)
-    labeled_df, target = create_labels(df, horizon_bars=2, fee_per_side=0.005, slippage_per_side=0.005)
+    # Test ternary hurdle mode
+    labeled_df, target_ternary = create_labels(
+        df, horizon_bars=2, fee_per_side=0.005, slippage_per_side=0.005, binary=False
+    )
+    assert target_ternary.iloc[0] == 0
+    assert target_ternary.iloc[1] == 1
+    assert target_ternary.iloc[2] == -1
 
-    # Row 0: close=100.0, future close at t+2 (Row 2)=100.0 -> ret=0.0 -> target=0 (Neutral)
-    assert target.iloc[0] == 0
-
-    # Row 1: close=100.0, future close at t+2 (Row 3)=105.0 -> ret=+5% > +2% hurdle -> target=1 (Up)
-    assert target.iloc[1] == 1
-
-    # Row 2: close=100.0, future close at t+2 (Row 4)=95.0 -> ret=-5% < -2% hurdle -> target=-1 (Down)
-    assert target.iloc[2] == -1
+    # Test binary directional mode
+    _, target_bin = create_labels(df, horizon_bars=2, binary=True)
+    assert target_bin.iloc[0] == 0  # 0% return -> 0
+    assert target_bin.iloc[1] == 1  # +5% return -> 1
+    assert target_bin.iloc[2] == 0  # -5% return -> 0
 
     # The last 2 rows must have NaN for forward_return as future is unknown
     assert pd.isna(labeled_df["forward_return"].iloc[-1])

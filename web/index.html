@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ETH/USDT 5m – AI Trading Indicator</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- TradingView Lightweight Charts Library -->
+  <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header Bar -->
+    <header class="top-nav">
+      <div class="nav-left">
+        <div class="brand">
+          <span class="logo-dot"></span>
+          <h1>AI-Powered Trading Indicator</h1>
+          <span class="asset-tag">ETH / USDT</span>
+          <span class="timeframe-tag">5M</span>
+        </div>
+      </div>
+
+      <div class="nav-center">
+        <!-- Live Signal Badge -->
+        <div class="signal-card" id="signalCard">
+          <div class="signal-label">15-MIN PREDICTION</div>
+          <div class="signal-value" id="signalDirection">INITIALIZING...</div>
+          <div class="signal-confidence" id="signalConfidence">Confidence: --%</div>
+        </div>
+      </div>
+
+      <div class="nav-right">
+        <div class="price-display">
+          <span class="price-label">LIVE PRICE</span>
+          <span class="price-value" id="currentPrice">--.--</span>
+        </div>
+        <div class="status-pill" id="connectionStatus">
+          <span class="pulse-indicator"></span>
+          <span id="statusText">CONNECTING</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace (Chart on Left, Live Log Box on Right) -->
+    <div class="workspace-body">
+      <!-- Main Chart Section -->
+      <main class="chart-section">
+        <div class="chart-header">
+          <div class="legend-items">
+            <span class="legend-item"><span class="badge-dot up-dot"></span> ▲ UP Signal (&ge; 60% Conf)</span>
+            <span class="legend-item"><span class="badge-dot down-dot"></span> ▼ DOWN Signal (&ge; 60% Conf)</span>
+            <span class="legend-item"><span class="badge-dot neutral-dot"></span> No Marker = Neutral (Noise Filter)</span>
+            <span class="legend-horizon">Horizon: 3 Bars (15 min) | No Repainting Guaranteed</span>
+          </div>
+        </div>
+
+        <!-- TradingView Lightweight Charts Container -->
+        <div id="tvChartContainer" class="chart-canvas"></div>
+      </main>
+
+      <!-- Right Side Live Log Box -->
+      <aside class="live-log-sidebar">
+        <div class="log-header">
+          <div class="log-title-wrap">
+            <span class="log-pulse"></span>
+            <h3>Live Activity Log</h3>
+          </div>
+          <div class="log-actions">
+            <span class="log-count" id="logCount">0 events</span>
+            <button class="clear-btn" id="clearLogBtn" title="Clear log">Clear</button>
+          </div>
+        </div>
+
+        <div class="log-filter-bar">
+          <button class="filter-tab active" data-filter="all">All</button>
+          <button class="filter-tab" data-filter="signals">Signals</button>
+          <button class="filter-tab" data-filter="candles">Candles</button>
+        </div>
+
+        <!-- Scrollable Log Stream -->
+        <div class="log-stream" id="logStream">
+          <div class="log-entry system">
+            <span class="log-time">--:--:--</span>
+            <span class="log-tag tag-system">SYSTEM</span>
+            <span class="log-msg">Dashboard ready. Awaiting connection...</span>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Bottom Metrics Panel -->
+    <footer class="bottom-panel">
+      <div class="metric-block">
+        <span class="metric-title">MODEL ARCHITECTURE</span>
+        <span class="metric-val">HistGradientBoosting (LightGBM)</span>
+      </div>
+      <div class="metric-block">
+        <span class="metric-title">TRAINED HISTORY</span>
+        <span class="metric-val">207,360 Candles (24 Months)</span>
+      </div>
+      <div class="metric-block">
+        <span class="metric-title">OUT-OF-SAMPLE ACCURACY</span>
+        <span class="metric-val highlight">56.0% - 58.3% (vs 49.8% Random)</span>
+      </div>
+      <div class="metric-block">
+        <span class="metric-title">NOISE FILTERED</span>
+        <span class="metric-val">> 97% Sideways Noise Avoided</span>
+      </div>
+      <div class="metric-block">
+        <span class="metric-title">DATA SOURCE</span>
+        <span class="metric-val">Binance WebSocket Stream</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

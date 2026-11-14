@@ -217,6 +217,41 @@ def evaluate_all() -> Dict:
     print(summary_df.to_string(index=False))
     print("=" * 105 + "\n")
 
+    # -------------------------------------------------------------
+    # Granular Breakdown across Confidence Thresholds (τ)
+    # -------------------------------------------------------------
+    breakdown_rows = []
+    for t_cand in [0.52, 0.55, 0.58, 0.60, 0.62, 0.65]:
+        longs = probs_up >= t_cand
+        shorts = probs_up <= (1.0 - t_cand)
+        n_up = int(np.sum(longs))
+        n_down = int(np.sum(shorts))
+        n_tot = n_up + n_down
+        if n_tot > 0:
+            up_acc = (np.sum(y_test[longs] == 1) / n_up * 100) if n_up > 0 else 0.0
+            down_acc = (np.sum(y_test[shorts] == 0) / n_down * 100) if n_down > 0 else 0.0
+            comb_acc = ((np.sum(y_test[longs] == 1) + np.sum(y_test[shorts] == 0)) / n_tot * 100)
+            gross_pnl = (np.sum(fwd_returns_test[longs]) - np.sum(fwd_returns_test[shorts])) * 100
+            breakdown_rows.append(
+                {
+                    "Confidence (τ)": f"≥ {t_cand*100:.0f}%",
+                    "Total Signals": n_tot,
+                    "Long Signals": n_up,
+                    "Short Signals": n_down,
+                    "Long Precision": f"{up_acc:.1f}%",
+                    "Short Precision": f"{down_acc:.1f}%",
+                    "Overall Precision": f"{comb_acc:.1f}%",
+                    "Gross Return": f"{gross_pnl:+.2f}%",
+                }
+            )
+
+    breakdown_df = pd.DataFrame(breakdown_rows)
+    print("=" * 105)
+    print("PRECISION & ACCURACY BY CONFIDENCE LEVEL (OUT-OF-SAMPLE TEST SET)")
+    print("=" * 105)
+    print(breakdown_df.to_string(index=False))
+    print("=" * 105 + "\n")
+
     # Save to reports/
     config.REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     metrics_path = config.REPORTS_DIR / "metrics.json"

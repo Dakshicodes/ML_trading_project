@@ -87,15 +87,31 @@ function initChart() {
     },
     rightPriceScale: {
       borderColor: "#27303c",
+      autoScale: true,
       scaleMargins: {
         top: 0.1,
-        bottom: 0.2,
+        bottom: 0.25,
       },
     },
     timeScale: {
       borderColor: "#27303c",
       timeVisible: true,
       secondsVisible: false,
+      barSpacing: 12,                   // Healthy, readable initial candle width
+      minBarSpacing: 6,                 // Prevents candles from collapsing into tiny needles!
+      rightOffset: 10,                  // Comfortable breathing room on the right edge
+      fixLeftEdge: false,
+      shiftVisibleRangeOnNewBar: true,  // Automatically scrolls forward as new live candles form
+    },
+    handleScale: {
+      mouseWheel: true,
+      pinch: true,
+      axisPressedMouseMove: true,
+    },
+    handleScroll: {
+      mouseWheel: false,
+      pressedMouseMove: true,
+      horzTouchDrag: true,
     },
   });
 
@@ -130,6 +146,13 @@ function initChart() {
       });
     }
   });
+}
+
+// Indian Standard Time offset (UTC + 5 hours 30 minutes in seconds)
+const TIMEZONE_OFFSET_SEC = 5.5 * 3600;
+
+function toLocalTs(utcSec) {
+  return utcSec + TIMEZONE_OFFSET_SEC;
 }
 
 /**
@@ -198,8 +221,9 @@ async function loadHistoricalData() {
     let signalCount = 0;
 
     for (const c of json.candles) {
+      const localTime = toLocalTs(c.time);
       candleData.push({
-        time: c.time,
+        time: localTime,
         open: c.open,
         high: c.high,
         low: c.low,
@@ -207,13 +231,13 @@ async function loadHistoricalData() {
       });
 
       volData.push({
-        time: c.time,
+        time: localTime,
         value: c.volume,
         color: c.close >= c.open ? "rgba(14, 203, 129, 0.4)" : "rgba(246, 70, 93, 0.4)",
       });
 
       if (c.signal === "Up" || c.signal === "Down") {
-        const m = createMarker(c.time, c.signal, c.confidence);
+        const m = createMarker(localTime, c.signal, c.confidence);
         if (m) markers.push(m);
         latestSig = { direction: c.signal, confidence: c.confidence };
         signalCount++;
@@ -231,7 +255,12 @@ async function loadHistoricalData() {
       updateSignalUI("Neutral", 0.0, lastCandle.close);
     }
 
-    chart.timeScale().fitContent();
+    // Keep comfortable candle size and scroll to current live candle
+    chart.timeScale().applyOptions({
+      barSpacing: 12,
+      rightOffset: 10,
+    });
+    chart.timeScale().scrollToRealTime();
 
     addLogEntry(
       "system",
@@ -273,10 +302,11 @@ function connectWebSocket() {
 
       if (msg.type === "candle_update") {
         const c = msg.candle;
+        const localTime = toLocalTs(c.time);
 
         // Update candlestick and volume in real-time
         candleSeries.update({
-          time: c.time,
+          time: localTime,
           open: c.open,
           high: c.high,
           low: c.low,
@@ -284,7 +314,7 @@ function connectWebSocket() {
         });
 
         volumeSeries.update({
-          time: c.time,
+          time: localTime,
           value: c.volume,
           color: c.close >= c.open ? "rgba(14, 203, 129, 0.4)" : "rgba(246, 70, 93, 0.4)",
         });
@@ -319,7 +349,7 @@ function connectWebSocket() {
             updateSignalUI(sig.direction, sig.confidence, c.close);
 
             if (sig.direction === "Up") {
-              const newMarker = createMarker(c.time, sig.direction, sig.confidence);
+              const newMarker = createMarker(localTime, sig.direction, sig.confidence);
               if (newMarker) {
                 markers.push(newMarker);
                 candleSeries.setMarkers(markers);
@@ -332,7 +362,7 @@ function connectWebSocket() {
                 "signals"
               );
             } else if (sig.direction === "Down") {
-              const newMarker = createMarker(c.time, sig.direction, sig.confidence);
+              const newMarker = createMarker(localTime, sig.direction, sig.confidence);
               if (newMarker) {
                 markers.push(newMarker);
                 candleSeries.setMarkers(markers);

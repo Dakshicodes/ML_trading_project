@@ -98,6 +98,38 @@ async def on_live_candle_received(candle: dict, signal: Optional[dict]):
     await manager.broadcast(broadcast_payload)
 
 
+def fetch_recent_live_history(limit: int = 250) -> Optional[pd.DataFrame]:
+    """
+    Fetch the most recent candles directly from Binance REST API on startup.
+    This ensures that historical chart candles seamlessly connect to the live WebSocket
+    without any date or price gap.
+    """
+    try:
+        import requests
+        url = f"{config.REST_BASE_URL.rstrip('/')}/api/v3/klines"
+        params = {"symbol": config.SYMBOL, "interval": config.INTERVAL, "limit": limit}
+        resp = requests.get(url, params=params, timeout=5)
+        if resp.status_code == 200:
+            raw_klines = resp.json()
+            if raw_klines:
+                rows = []
+                for k in raw_klines:
+                    rows.append({
+                        "open_time": int(k[0]),
+                        "open": float(k[1]),
+                        "high": float(k[2]),
+                        "low": float(k[3]),
+                        "close": float(k[4]),
+                        "volume": float(k[5]),
+                    })
+                df = pd.DataFrame(rows)
+                logger.info("Fetched %d fresh recent candles directly from Binance REST API.", len(df))
+                return df
+    except Exception as e:
+        logger.warning("Could not fetch fresh live history via REST (%s). Falling back to local file.", e)
+    return None
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -107,15 +139,20 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing CandleStore with historical data...")
     store = get_store()
 
-    parquet_file = config.CLEAN_CSV.with_suffix(".parquet")
-    if parquet_file.exists():
-        df_hist = pd.read_parquet(parquet_file)
-        store.load_initial_history(df_hist, compute_historical_signals=True)
-    elif config.CLEAN_CSV.exists():
-        df_hist = pd.read_csv(config.CLEAN_CSV)
-        store.load_initial_history(df_hist, compute_historical_signals=True)
+    # 1. Try seeding with fresh live history first to prevent date/price gaps
+    recent_df = fetch_recent_live_history(limit=250)
+    if recent_df is not None and len(recent_df) >= 60:
+        store.load_initial_history(recent_df, compute_historical_signals=True)
     else:
-        logger.warning("No pre-existing historical dataset found to seed store.")
+        parquet_file = config.CLEAN_CSV.with_suffix(".parquet")
+        if parquet_file.exists():
+            df_hist = pd.read_parquet(parquet_file)
+            store.load_initial_history(df_hist, compute_historical_signals=True)
+        elif config.CLEAN_CSV.exists():
+            df_hist = pd.read_csv(config.CLEAN_CSV)
+            store.load_initial_history(df_hist, compute_historical_signals=True)
+        else:
+            logger.warning("No pre-existing historical dataset found to seed store.")
 
     # Initialize model early
     try:

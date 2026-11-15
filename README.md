@@ -2,7 +2,7 @@
 
 An end-to-end machine learning trading indicator for **ETHUSDT 5-minute candlesticks**, predicting price direction over a **15-minute horizon (3 candles)** with real-time calibrated confidence and **zero repainting**.
 
-Live Chart Web App** featuring a FastAPI backend and TradingView's Lightweight Charts frontend.
+Live Chart Web App featuring a FastAPI backend and TradingView's Lightweight Charts frontend.
 
 ---
 

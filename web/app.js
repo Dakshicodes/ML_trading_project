@@ -154,74 +154,85 @@ function initChart() {
 }
 
 function updateSupportResistance(candles) {
-  if (!candles || candles.length < 20 || !candleSeries) return;
+  try {
+    if (!candles || candles.length < 20 || !candleSeries) return;
 
-  // Use the last 60 candles to find realistic swing highs and swing lows
-  const recent = candles.slice(-60);
-  let highestHigh = -Infinity;
-  let highestClose = -Infinity;
-  let lowestLow = Infinity;
-  let lowestClose = Infinity;
+    // Use the last 60 candles to find realistic swing highs and swing lows
+    const recent = candles.slice(-60);
+    let highestHigh = -Infinity;
+    let highestClose = -Infinity;
+    let lowestLow = Infinity;
+    let lowestClose = Infinity;
 
-  for (const c of recent) {
-    if (c.high > highestHigh) highestHigh = c.high;
-    if (c.close > highestClose) highestClose = c.close;
-    if (c.low < lowestLow) lowestLow = c.low;
-    if (c.close < lowestClose) lowestClose = c.close;
+    for (const c of recent) {
+      if (c.high > highestHigh) highestHigh = c.high;
+      if (c.close > highestClose) highestClose = c.close;
+      if (c.low < lowestLow) lowestLow = c.low;
+      if (c.close < lowestClose) lowestClose = c.close;
+    }
+
+    if (highestHigh === -Infinity || lowestLow === Infinity) return;
+
+    const resTop = highestHigh;
+    const resBottom = Math.max(highestClose, highestHigh * 0.995);
+    const supBottom = lowestLow;
+    const supTop = Math.min(lowestClose, lowestLow * 1.005);
+
+    // If lines don't exist, create them once
+    if (!resistanceTopLine) {
+      resistanceTopLine = candleSeries.createPriceLine({
+        price: resTop,
+        color: "#f6465d",
+        lineWidth: 2,
+        lineStyle: LightweightCharts.LineStyle.Solid,
+        axisLabelVisible: true,
+        title: "RESISTANCE ZONE (TOP)",
+      });
+    } else {
+      resistanceTopLine.applyOptions({ price: resTop });
+    }
+
+    if (!resistanceBottomLine) {
+      resistanceBottomLine = candleSeries.createPriceLine({
+        price: resBottom,
+        color: "rgba(246, 70, 93, 0.6)",
+        lineWidth: 1,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: false,
+        title: "RESISTANCE (BASE)",
+      });
+    } else {
+      resistanceBottomLine.applyOptions({ price: resBottom });
+    }
+
+    if (!supportTopLine) {
+      supportTopLine = candleSeries.createPriceLine({
+        price: supTop,
+        color: "rgba(14, 203, 129, 0.6)",
+        lineWidth: 1,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: false,
+        title: "SUPPORT (CEILING)",
+      });
+    } else {
+      supportTopLine.applyOptions({ price: supTop });
+    }
+
+    if (!supportBottomLine) {
+      supportBottomLine = candleSeries.createPriceLine({
+        price: supBottom,
+        color: "#0ecb81",
+        lineWidth: 2,
+        lineStyle: LightweightCharts.LineStyle.Solid,
+        axisLabelVisible: true,
+        title: "SUPPORT ZONE (BOTTOM)",
+      });
+    } else {
+      supportBottomLine.applyOptions({ price: supBottom });
+    }
+  } catch (err) {
+    console.error("Error in updateSupportResistance:", err);
   }
-
-  if (highestHigh === -Infinity || lowestLow === Infinity) return;
-
-  // Create a realistic block/zone thickness (top wick to body close)
-  const resTop = highestHigh;
-  const resBottom = Math.max(highestClose, highestHigh * 0.995); // Zone band
-
-  const supBottom = lowestLow;
-  const supTop = Math.min(lowestClose, lowestLow * 1.005); // Zone band
-
-  // Clear previous lines
-  if (resistanceTopLine) candleSeries.removePriceLine(resistanceTopLine);
-  if (resistanceBottomLine) candleSeries.removePriceLine(resistanceBottomLine);
-  if (supportTopLine) candleSeries.removePriceLine(supportTopLine);
-  if (supportBottomLine) candleSeries.removePriceLine(supportBottomLine);
-
-  // RED RESISTANCE ZONE (Shaded area effect with bounding lines)
-  resistanceTopLine = candleSeries.createPriceLine({
-    price: resTop,
-    color: "#f6465d",
-    lineWidth: 2,
-    lineStyle: LightweightCharts.LineStyle.Solid,
-    axisLabelVisible: true,
-    title: "RESISTANCE ZONE (TOP)",
-  });
-
-  resistanceBottomLine = candleSeries.createPriceLine({
-    price: resBottom,
-    color: "rgba(246, 70, 93, 0.6)",
-    lineWidth: 1,
-    lineStyle: LightweightCharts.LineStyle.Dashed,
-    axisLabelVisible: false,
-    title: "RESISTANCE (BASE)",
-  });
-
-  // GREEN SUPPORT ZONE (Shaded area effect with bounding lines)
-  supportTopLine = candleSeries.createPriceLine({
-    price: supTop,
-    color: "rgba(14, 203, 129, 0.6)",
-    lineWidth: 1,
-    lineStyle: LightweightCharts.LineStyle.Dashed,
-    axisLabelVisible: false,
-    title: "SUPPORT (CEILING)",
-  });
-
-  supportBottomLine = candleSeries.createPriceLine({
-    price: supBottom,
-    color: "#0ecb81",
-    lineWidth: 2,
-    lineStyle: LightweightCharts.LineStyle.Solid,
-    axisLabelVisible: true,
-    title: "SUPPORT ZONE (BOTTOM)",
-  });
 }
 
 // Indian Standard Time offset (UTC + 5 hours 30 minutes in seconds)
@@ -414,9 +425,13 @@ function connectWebSocket() {
 
         // When a candle CLOSES and a prediction signal is generated
         if (c.is_closed) {
-          if (jsonHistoricalCandles) {
-            jsonHistoricalCandles.push(c);
-            updateSupportResistance(jsonHistoricalCandles);
+          try {
+            if (jsonHistoricalCandles && jsonHistoricalCandles.length > 0) {
+              jsonHistoricalCandles.push(c);
+              updateSupportResistance(jsonHistoricalCandles);
+            }
+          } catch (e) {
+            console.error("Support/Resistance update error:", e);
           }
           addLogEntry(
             "candle-close",

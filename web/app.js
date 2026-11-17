@@ -7,7 +7,12 @@
 let chart = null;
 let candleSeries = null;
 let volumeSeries = null;
+let resistanceTopLine = null;
+let resistanceBottomLine = null;
+let supportTopLine = null;
+let supportBottomLine = null;
 let markers = [];
+let jsonHistoricalCandles = [];
 let ws = null;
 let reconnectTimer = null;
 let logEntriesCount = 0;
@@ -148,6 +153,77 @@ function initChart() {
   });
 }
 
+function updateSupportResistance(candles) {
+  if (!candles || candles.length < 20 || !candleSeries) return;
+
+  // Use the last 60 candles to find realistic swing highs and swing lows
+  const recent = candles.slice(-60);
+  let highestHigh = -Infinity;
+  let highestClose = -Infinity;
+  let lowestLow = Infinity;
+  let lowestClose = Infinity;
+
+  for (const c of recent) {
+    if (c.high > highestHigh) highestHigh = c.high;
+    if (c.close > highestClose) highestClose = c.close;
+    if (c.low < lowestLow) lowestLow = c.low;
+    if (c.close < lowestClose) lowestClose = c.close;
+  }
+
+  if (highestHigh === -Infinity || lowestLow === Infinity) return;
+
+  // Create a realistic block/zone thickness (top wick to body close)
+  const resTop = highestHigh;
+  const resBottom = Math.max(highestClose, highestHigh * 0.995); // Zone band
+
+  const supBottom = lowestLow;
+  const supTop = Math.min(lowestClose, lowestLow * 1.005); // Zone band
+
+  // Clear previous lines
+  if (resistanceTopLine) candleSeries.removePriceLine(resistanceTopLine);
+  if (resistanceBottomLine) candleSeries.removePriceLine(resistanceBottomLine);
+  if (supportTopLine) candleSeries.removePriceLine(supportTopLine);
+  if (supportBottomLine) candleSeries.removePriceLine(supportBottomLine);
+
+  // RED RESISTANCE ZONE (Shaded area effect with bounding lines)
+  resistanceTopLine = candleSeries.createPriceLine({
+    price: resTop,
+    color: "#f6465d",
+    lineWidth: 2,
+    lineStyle: LightweightCharts.LineStyle.Solid,
+    axisLabelVisible: true,
+    title: "RESISTANCE ZONE (TOP)",
+  });
+
+  resistanceBottomLine = candleSeries.createPriceLine({
+    price: resBottom,
+    color: "rgba(246, 70, 93, 0.6)",
+    lineWidth: 1,
+    lineStyle: LightweightCharts.LineStyle.Dashed,
+    axisLabelVisible: false,
+    title: "RESISTANCE (BASE)",
+  });
+
+  // GREEN SUPPORT ZONE (Shaded area effect with bounding lines)
+  supportTopLine = candleSeries.createPriceLine({
+    price: supTop,
+    color: "rgba(14, 203, 129, 0.6)",
+    lineWidth: 1,
+    lineStyle: LightweightCharts.LineStyle.Dashed,
+    axisLabelVisible: false,
+    title: "SUPPORT (CEILING)",
+  });
+
+  supportBottomLine = candleSeries.createPriceLine({
+    price: supBottom,
+    color: "#0ecb81",
+    lineWidth: 2,
+    lineStyle: LightweightCharts.LineStyle.Solid,
+    axisLabelVisible: true,
+    title: "SUPPORT ZONE (BOTTOM)",
+  });
+}
+
 // Indian Standard Time offset (UTC + 5 hours 30 minutes in seconds)
 const TIMEZONE_OFFSET_SEC = 5.5 * 3600;
 
@@ -212,6 +288,7 @@ async function loadHistoricalData() {
     const res = await fetch("/api/candles?limit=250");
     const json = await res.json();
     if (!json.candles || json.candles.length === 0) return;
+    jsonHistoricalCandles = json.candles;
 
     const candleData = [];
     const volData = [];
@@ -247,6 +324,7 @@ async function loadHistoricalData() {
     candleSeries.setData(candleData);
     volumeSeries.setData(volData);
     candleSeries.setMarkers(markers);
+    updateSupportResistance(json.candles);
 
     const lastCandle = json.candles[json.candles.length - 1];
     if (latestSig) {
@@ -336,6 +414,10 @@ function connectWebSocket() {
 
         // When a candle CLOSES and a prediction signal is generated
         if (c.is_closed) {
+          if (jsonHistoricalCandles) {
+            jsonHistoricalCandles.push(c);
+            updateSupportResistance(jsonHistoricalCandles);
+          }
           addLogEntry(
             "candle-close",
             "CLOSED",

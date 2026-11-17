@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
   <!-- TradingView Lightweight Charts Library -->
   <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 </head>
+
 <body>
   <div class="app-container">
     <!-- Top Header Bar -->
@@ -48,10 +50,11 @@
       <main class="chart-section">
         <div class="chart-header">
           <div class="legend-items">
-            <span class="legend-item"><span class="badge-dot up-dot"></span> ▲ UP Signal (&ge; 60% Conf)</span>
-            <span class="legend-item"><span class="badge-dot down-dot"></span> ▼ DOWN Signal (&ge; 60% Conf)</span>
-            <span class="legend-item"><span class="badge-dot neutral-dot"></span> No Marker = Neutral (Noise Filter)</span>
-            <span class="legend-horizon">Horizon: 3 Bars (15 min) | Timezone: IST (Local) | No Repainting</span>
+            <span class="legend-item"><span class="badge-dot up-dot"></span> ▲ UP Signal (&ge; 52% Conf)</span>
+            <span class="legend-item"><span class="badge-dot down-dot"></span> ▼ DOWN Signal (&ge; 52% Conf)</span>
+            <span class="legend-item" style="color: #f6465d; font-weight: 600;">── Red: Resistance Zone</span>
+            <span class="legend-item" style="color: #0ecb81; font-weight: 600;">── Green: Support Zone</span>
+            <span class="legend-horizon">Horizon: 3 Bars (15 min) | Timezone: IST (Local)</span>
           </div>
         </div>
 
@@ -101,11 +104,11 @@
       </div>
       <div class="metric-block">
         <span class="metric-title">OUT-OF-SAMPLE ACCURACY</span>
-        <span class="metric-val highlight">56.0% - 58.3% (vs 49.8% Random)</span>
+        <span class="metric-val highlight">53.9% (vs 49.5% Random)</span>
       </div>
       <div class="metric-block">
-        <span class="metric-title">NOISE FILTERED</span>
-        <span class="metric-val">> 97% Sideways Noise Avoided</span>
+        <span class="metric-title">PREDICTION HORIZON</span>
+        <span class="metric-val">3 Bars (15 Minutes Forward)</span>
       </div>
       <div class="metric-block">
         <span class="metric-title">DATA SOURCE</span>
@@ -116,4 +119,5 @@
 
   <script src="app.js"></script>
 </body>
+
 </html>

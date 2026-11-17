@@ -58,7 +58,7 @@ class SignalPredictor:
 
         # Allow override; otherwise use calibrated threshold from training
         if self.confidence_threshold is None:
-            self.confidence_threshold = bundle.get("confidence_threshold", 0.60)
+            self.confidence_threshold = 0.52
 
         self.round_trip_cost = bundle.get("round_trip_cost", 0.0024)
         logger.info(
